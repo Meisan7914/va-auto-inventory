@@ -4,16 +4,255 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>VA AUTO Restoration - Inventory</title>
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="bg-gray-100 p-4 font-sans">
-  <div class="max-w-md mx-auto bg-white rounded-xl shadow-md p-6">
-    <h1 class="text-xl font-bold text-gray-800 mb-2">VA AUTO Restoration</h1>
-    <p class="text-gray-600 text-sm mb-4">Stock Management System</p>
-    
-    <div class="border-t pt-4">
-      <p class="text-green-600 font-semibold">System initialized successfully!</p>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen pb-12">
+
+  <!-- Header -->
+  <header class="bg-slate-900 text-white p-4 sticky top-0 z-50 shadow-md">
+    <div class="max-w-xl mx-auto flex items-center justify-between">
+      <div>
+        <h1 class="font-bold text-lg text-amber-400">VA AUTO RESTORATION</h1>
+        <p class="text-xs text-slate-400">Lamp Inventory System</p>
+      </div>
+      <div id="connectionStatus" class="text-xs px-2 py-1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+        Connecting...
+      </div>
     </div>
-  </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-xl mx-auto p-4 space-y-4">
+
+    <!-- Search & Brand Filter Bar -->
+    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-3">
+      <!-- Search Box -->
+      <div>
+        <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Search Inventory</label>
+        <input 
+          type="text" 
+          id="searchInput" 
+          placeholder="e.g. W205, 2 projector, F30, LED..." 
+          class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 p-2.5 outline-none transition"
+          oninput="renderInventory()"
+        />
+      </div>
+
+      <!-- Brand Filter Tabs -->
+      <div>
+        <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Filter by Brand</label>
+        <div id="brandFilterContainer" class="flex flex-wrap gap-1.5">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Inventory Listing Area -->
+    <div id="inventoryContainer" class="space-y-4">
+      <!-- Items render here dynamically -->
+      <div class="text-center py-12 text-slate-400 text-sm">
+        Loading inventory database...
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    // Live Supabase Database Connection
+    const SUPABASE_URL = "https://ctamqhphvnjlrmnqhpwo.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN0YW1xaHBodm5qbHJtbnFocHdvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYxOTk4NTYsImV4cCI6MjEwMTc3NTg1Nn0.q4XC0xUmO1bvdTE4fw8VluR2_M1Nr-GznmnBrvqsEVs";
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let allItems = [];
+    let allInventory = [];
+    let selectedBrand = "ALL";
+
+    // Initialize App
+    async function initApp() {
+      try {
+        await fetchData();
+        document.getElementById("connectionStatus").innerText = "Live Database";
+        document.getElementById("connectionStatus").className = "text-xs px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
+      } catch (err) {
+        console.error(err);
+        document.getElementById("connectionStatus").innerText = "Connection Failed";
+        document.getElementById("connectionStatus").className = "text-xs px-2 py-1 rounded bg-red-500/20 text-red-300 border border-red-500/30";
+      }
+    }
+
+    // Fetch data from Supabase
+    async function fetchData() {
+      const { data: items, error: itemsError } = await supabase.from('items').select('*');
+      const { data: inv, error: invError } = await supabase.from('inventory').select('*');
+
+      if (itemsError || invError) throw itemsError || invError;
+
+      allItems = items;
+      allInventory = inv;
+
+      renderBrandTabs();
+      renderInventory();
+    }
+
+    // Render Brand Tabs
+    function renderBrandTabs() {
+      const brands = ["ALL", ...new Set(allItems.map(item => item.brand))];
+      const container = document.getElementById("brandFilterContainer");
+
+      container.innerHTML = brands.map(b => `
+        <button 
+          onclick="setBrandFilter('${b}')"
+          class="px-3 py-1 text-xs font-semibold rounded-full border transition ${
+            selectedBrand === b 
+              ? 'bg-amber-500 text-slate-900 border-amber-500 shadow-sm' 
+              : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+          }"
+        >
+          ${b}
+        </button>
+      `).join('');
+    }
+
+    function setBrandFilter(brand) {
+      selectedBrand = brand;
+      renderBrandTabs();
+      renderInventory();
+    }
+
+    // Render Inventory List
+    function renderInventory() {
+      const container = document.getElementById("inventoryContainer");
+      const searchTerm = document.getElementById("searchInput").value.toLowerCase().trim();
+
+      // Filter Items
+      const filteredItems = allItems.filter(item => {
+        const matchesBrand = selectedBrand === "ALL" || item.brand === selectedBrand;
+        const matchesSearch = 
+          item.model_code.toLowerCase().includes(searchTerm) ||
+          item.series.toLowerCase().includes(searchTerm) ||
+          item.category.toLowerCase().includes(searchTerm) ||
+          (item.spec_description && item.spec_description.toLowerCase().includes(searchTerm)) ||
+          (item.oem_part_number && item.oem_part_number.toLowerCase().includes(searchTerm));
+
+        return matchesBrand && matchesSearch;
+      });
+
+      if (filteredItems.length === 0) {
+        container.innerHTML = `
+          <div class="bg-white p-8 text-center rounded-xl border border-slate-200 text-slate-400 text-sm">
+            No matching lamps found in stock.
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = filteredItems.map(item => {
+        const itemStocks = allInventory.filter(inv => inv.item_id === item.id);
+        const leftStock = itemStocks.find(s => s.side === 'L');
+        const rightStock = itemStocks.find(s => s.side === 'R');
+
+        return `
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <!-- Item Header -->
+            <div class="bg-slate-50 p-3 border-b border-slate-200 flex justify-between items-start">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-bold px-2 py-0.5 rounded bg-slate-200 text-slate-700">${item.brand}</span>
+                  <span class="text-xs font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">${item.category}</span>
+                </div>
+                <h3 class="font-bold text-slate-900 mt-1">${item.series} - ${item.model_code}</h3>
+                <p class="text-xs text-slate-500">${item.spec_description || 'Standard Spec'} ${item.oem_part_number ? `• (${item.oem_part_number})` : ''}</p>
+              </div>
+            </div>
+
+            <!-- Stock Controls -->
+            <div class="p-3 space-y-3">
+              ${renderStockRow(item.id, 'L', leftStock)}
+              ${renderStockRow(item.id, 'R', rightStock)}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderStockRow(itemId, side, stockObj) {
+      const qty = stockObj ? stockObj.quantity : 0;
+      const notes = stockObj && stockObj.notes ? stockObj.notes : '';
+      const stockId = stockObj ? stockObj.id : null;
+
+      return `
+        <div class="flex items-center justify-between bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+          <div class="flex items-center gap-2">
+            <span class="w-7 h-7 flex items-center justify-center font-bold text-sm rounded ${side === 'L' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}">
+              ${side}
+            </span>
+            <div>
+              <span class="text-xs text-slate-500 block">Side ${side === 'L' ? 'Left' : 'Right'}</span>
+              <input 
+                type="text" 
+                placeholder="Add note..." 
+                value="${notes}" 
+                onchange="updateNote(${stockId}, ${itemId}, '${side}', this.value)"
+                class="text-xs bg-transparent border-b border-dashed border-slate-300 focus:border-amber-500 outline-none text-slate-600 w-28"
+              />
+            </div>
+          </div>
+
+          <!-- Quantity Buttons -->
+          <div class="flex items-center gap-3">
+            <button 
+              onclick="adjustStock(${stockId}, ${itemId}, '${side}', ${qty}, -1)"
+              class="w-8 h-8 rounded-lg bg-white border border-slate-300 font-bold text-slate-600 hover:bg-slate-100 active:scale-95 transition flex items-center justify-center shadow-sm"
+            >
+              -
+            </button>
+            <span class="font-bold text-base min-w-[20px] text-center ${qty > 0 ? 'text-slate-900' : 'text-red-400'}">${qty}</span>
+            <button 
+              onclick="adjustStock(${stockId}, ${itemId}, '${side}', ${qty}, 1)"
+              class="w-8 h-8 rounded-lg bg-amber-500 text-slate-900 font-bold hover:bg-amber-400 active:scale-95 transition flex items-center justify-center shadow-sm"
+            >
+              +
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    // Stock Quantity Update Handler
+    async function adjustStock(stockId, itemId, side, currentQty, change) {
+      const newQty = Math.max(0, currentQty + change);
+
+      if (stockId) {
+        const { error } = await supabase.from('inventory').update({ quantity: newQty }).eq('id', stockId);
+        if (!error) {
+          const item = allInventory.find(i => i.id === stockId);
+          if (item) item.quantity = newQty;
+        }
+      } else {
+        const { data, error } = await supabase.from('inventory').insert([{ item_id: itemId, side: side, quantity: newQty }]).select();
+        if (!error && data) allInventory.push(data[0]);
+      }
+
+      renderInventory();
+    }
+
+    // Note Update Handler
+    async function updateNote(stockId, itemId, side, newNote) {
+      if (stockId) {
+        await supabase.from('inventory').update({ notes: newNote }).eq('id', stockId);
+        const item = allInventory.find(i => i.id === stockId);
+        if (item) item.notes = newNote;
+      } else if (newNote.trim() !== '') {
+        const { data } = await supabase.from('inventory').insert([{ item_id: itemId, side: side, quantity: 0, notes: newNote }]).select();
+        if (data) allInventory.push(data[0]);
+      }
+    }
+
+    // Start App
+    initApp();
+  </script>
 </body>
 </html>
