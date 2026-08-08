@@ -4,9 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>VA AUTO Restoration - Inventory</title>
-  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen pb-12">
@@ -29,7 +27,6 @@
 
     <!-- Search & Brand Filter Bar -->
     <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-3">
-      <!-- Search Box -->
       <div>
         <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Search Inventory</label>
         <input 
@@ -41,19 +38,15 @@
         />
       </div>
 
-      <!-- Brand Filter Tabs -->
       <div>
         <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Filter by Brand</label>
-        <div id="brandFilterContainer" class="flex flex-wrap gap-1.5">
-          <!-- Dynamically populated -->
-        </div>
+        <div id="brandFilterContainer" class="flex flex-wrap gap-1.5"></div>
       </div>
     </div>
 
     <!-- Inventory Listing Area -->
     <div id="inventoryContainer" class="space-y-4">
-      <!-- Items render here dynamically -->
-      <div class="text-center py-12 text-slate-400 text-sm">
+      <div id="loadingText" class="text-center py-12 text-slate-400 text-sm">
         Loading inventory database...
       </div>
     </div>
@@ -61,44 +54,58 @@
   </main>
 
   <script>
-    // Live Supabase Database Connection
     const SUPABASE_URL = "https://ctamqhphvnjlrmnqhpwo.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN0YW1xaHBodm5qbHJtbnFocHdvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYxOTk4NTYsImV4cCI6MjEwMTc3NTg1Nn0.q4XC0xUmO1bvdTE4fw8VluR2_M1Nr-GznmnBrvqsEVs";
 
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
+    let supabase;
     let allItems = [];
     let allInventory = [];
     let selectedBrand = "ALL";
 
-    // Initialize App
     async function initApp() {
+      const statusEl = document.getElementById("connectionStatus");
+      const loadingEl = document.getElementById("loadingText");
+
       try {
+        if (!window.supabase) {
+          throw new Error("Supabase JS Library failed to load.");
+        }
+
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         await fetchData();
-        document.getElementById("connectionStatus").innerText = "Live Database";
-        document.getElementById("connectionStatus").className = "text-xs px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
+
+        statusEl.innerText = "Live Database";
+        statusEl.className = "text-xs px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
       } catch (err) {
-        console.error(err);
-        document.getElementById("connectionStatus").innerText = "Connection Failed";
-        document.getElementById("connectionStatus").className = "text-xs px-2 py-1 rounded bg-red-500/20 text-red-300 border border-red-500/30";
+        console.error("Initialization Error:", err);
+        statusEl.innerText = "Connection Failed";
+        statusEl.className = "text-xs px-2 py-1 rounded bg-red-500/20 text-red-300 border border-red-500/30";
+
+        if (loadingEl) {
+          loadingEl.innerHTML = `
+            <div class="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg text-left text-xs font-mono">
+              <strong>Error Connecting:</strong><br/>
+              ${err.message || JSON.stringify(err)}
+            </div>
+          `;
+        }
       }
     }
 
-    // Fetch data from Supabase
     async function fetchData() {
       const { data: items, error: itemsError } = await supabase.from('items').select('*');
       const { data: inv, error: invError } = await supabase.from('inventory').select('*');
 
-      if (itemsError || invError) throw itemsError || invError;
+      if (itemsError) throw itemsError;
+      if (invError) throw invError;
 
-      allItems = items;
-      allInventory = inv;
+      allItems = items || [];
+      allInventory = inv || [];
 
       renderBrandTabs();
       renderInventory();
     }
 
-    // Render Brand Tabs
     function renderBrandTabs() {
       const brands = ["ALL", ...new Set(allItems.map(item => item.brand))];
       const container = document.getElementById("brandFilterContainer");
@@ -123,18 +130,16 @@
       renderInventory();
     }
 
-    // Render Inventory List
     function renderInventory() {
       const container = document.getElementById("inventoryContainer");
       const searchTerm = document.getElementById("searchInput").value.toLowerCase().trim();
 
-      // Filter Items
       const filteredItems = allItems.filter(item => {
         const matchesBrand = selectedBrand === "ALL" || item.brand === selectedBrand;
         const matchesSearch = 
-          item.model_code.toLowerCase().includes(searchTerm) ||
-          item.series.toLowerCase().includes(searchTerm) ||
-          item.category.toLowerCase().includes(searchTerm) ||
+          (item.model_code && item.model_code.toLowerCase().includes(searchTerm)) ||
+          (item.series && item.series.toLowerCase().includes(searchTerm)) ||
+          (item.category && item.category.toLowerCase().includes(searchTerm)) ||
           (item.spec_description && item.spec_description.toLowerCase().includes(searchTerm)) ||
           (item.oem_part_number && item.oem_part_number.toLowerCase().includes(searchTerm));
 
@@ -156,7 +161,6 @@
 
         return `
           <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <!-- Item Header -->
             <div class="bg-slate-50 p-3 border-b border-slate-200 flex justify-between items-start">
               <div>
                 <div class="flex items-center gap-2">
@@ -168,7 +172,6 @@
               </div>
             </div>
 
-            <!-- Stock Controls -->
             <div class="p-3 space-y-3">
               ${renderStockRow(item.id, 'L', leftStock)}
               ${renderStockRow(item.id, 'R', rightStock)}
@@ -201,7 +204,6 @@
             </div>
           </div>
 
-          <!-- Quantity Buttons -->
           <div class="flex items-center gap-3">
             <button 
               onclick="adjustStock(${stockId}, ${itemId}, '${side}', ${qty}, -1)"
@@ -221,7 +223,6 @@
       `;
     }
 
-    // Stock Quantity Update Handler
     async function adjustStock(stockId, itemId, side, currentQty, change) {
       const newQty = Math.max(0, currentQty + change);
 
@@ -239,7 +240,6 @@
       renderInventory();
     }
 
-    // Note Update Handler
     async function updateNote(stockId, itemId, side, newNote) {
       if (stockId) {
         await supabase.from('inventory').update({ notes: newNote }).eq('id', stockId);
@@ -251,8 +251,7 @@
       }
     }
 
-    // Start App
-    initApp();
+    window.addEventListener('DOMContentLoaded', initApp);
   </script>
 </body>
 </html>
