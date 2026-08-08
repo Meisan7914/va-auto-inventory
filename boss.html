@@ -241,16 +241,21 @@
         item.series.toLowerCase().includes(filterTerm)
       );
 
+      if (filteredItems.length === 0) {
+        container.innerHTML = `<div class="p-4 text-center text-slate-400">No items found in catalog.</div>`;
+        return;
+      }
+
       container.innerHTML = `
-        <table class="w-full text-left border-collapse border border-slate-200">
+        <table class="w-full text-left border-collapse border border-slate-200 min-w-[600px]">
           <thead>
             <tr class="bg-slate-100 text-slate-700">
               <th class="p-2 border">Brand</th>
               <th class="p-2 border">Model / Series</th>
-              <th class="p-2 border text-center">Left Stock (L)</th>
-              <th class="p-2 border text-center">Right Stock (R)</th>
+              <th class="p-2 border text-center w-32">Left (L) Stock</th>
+              <th class="p-2 border text-center w-32">Right (R) Stock</th>
               <th class="p-2 border">Remarks</th>
-              <th class="p-2 border text-center">Action</th>
+              <th class="p-2 border text-center w-16">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -261,49 +266,62 @@
 
               const leftQty = left ? left.quantity : 0;
               const rightQty = right ? right.quantity : 0;
+              const leftId = left ? left.id : null;
+              const rightId = right ? right.id : null;
               const leftNotes = left ? left.notes || '' : '';
-              const rightNotes = right ? right.notes || '' : '';
 
               return `
                 <tr class="hover:bg-slate-50 border-b">
                   <td class="p-2 border font-bold text-slate-800">${item.brand}</td>
                   <td class="p-2 border">
                     <div class="font-bold text-slate-900">${item.series} (${item.model_code})</div>
-                    <div class="text-[10px] text-slate-400">${item.category} • ${item.spec_description || 'Std'}</div>
+                    <div class="text-[10px] text-slate-400">${item.category} • ${item.spec_description || 'Std Spec'}</div>
                   </td>
 
-                  <!-- Left Stock Control -->
+                  <!-- Left Stock Control (+ / -) -->
                   <td class="p-2 border text-center">
-                    <div class="flex items-center justify-center gap-1">
-                      <button onclick="directStockEdit(${left?.id || null}, ${item.id}, 'L', ${leftQty - 1})" class="w-5 h-5 bg-slate-200 rounded font-bold">-</button>
-                      <span class="font-bold min-w-[20px] ${leftQty > 0 ? 'text-emerald-600' : 'text-slate-400'}">${leftQty}</span>
-                      <button onclick="directStockEdit(${left?.id || null}, ${item.id}, 'L', ${leftQty + 1})" class="w-5 h-5 bg-amber-500 text-slate-900 rounded font-bold">+</button>
+                    <div class="flex items-center justify-center gap-2">
+                      <button 
+                        onclick="directStockEdit(${leftId}, ${item.id}, 'L', ${leftQty - 1})" 
+                        class="w-7 h-7 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded font-bold text-sm shadow-sm active:scale-95"
+                      >-</button>
+                      <span class="font-bold text-sm min-w-[24px] ${leftQty > 0 ? 'text-emerald-600' : 'text-slate-400'}">${leftQty}</span>
+                      <button 
+                        onclick="directStockEdit(${leftId}, ${item.id}, 'L', ${leftQty + 1})" 
+                        class="w-7 h-7 bg-amber-500 hover:bg-amber-400 text-slate-900 rounded font-bold text-sm shadow-sm active:scale-95"
+                      >+</button>
                     </div>
                   </td>
 
-                  <!-- Right Stock Control -->
+                  <!-- Right Stock Control (+ / -) -->
                   <td class="p-2 border text-center">
-                    <div class="flex items-center justify-center gap-1">
-                      <button onclick="directStockEdit(${right?.id || null}, ${item.id}, 'R', ${rightQty - 1})" class="w-5 h-5 bg-slate-200 rounded font-bold">-</button>
-                      <span class="font-bold min-w-[20px] ${rightQty > 0 ? 'text-emerald-600' : 'text-slate-400'}">${rightQty}</span>
-                      <button onclick="directStockEdit(${right?.id || null}, ${item.id}, 'R', ${rightQty + 1})" class="w-5 h-5 bg-amber-500 text-slate-900 rounded font-bold">+</button>
+                    <div class="flex items-center justify-center gap-2">
+                      <button 
+                        onclick="directStockEdit(${rightId}, ${item.id}, 'R', ${rightQty - 1})" 
+                        class="w-7 h-7 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded font-bold text-sm shadow-sm active:scale-95"
+                      >-</button>
+                      <span class="font-bold text-sm min-w-[24px] ${rightQty > 0 ? 'text-emerald-600' : 'text-slate-400'}">${rightQty}</span>
+                      <button 
+                        onclick="directStockEdit(${rightId}, ${item.id}, 'R', ${rightQty + 1})" 
+                        class="w-7 h-7 bg-amber-500 hover:bg-amber-400 text-slate-900 rounded font-bold text-sm shadow-sm active:scale-95"
+                      >+</button>
                     </div>
                   </td>
 
                   <!-- Remarks Editing -->
-                  <td class="p-2 border text-xs space-y-1">
+                  <td class="p-2 border text-xs">
                     <input 
                       type="text" 
-                      placeholder="L note..." 
+                      placeholder="Add note..." 
                       value="${leftNotes}" 
-                      onchange="updateStockNote(${left?.id || null}, ${item.id}, 'L', this.value)"
-                      class="w-full border-b border-dashed outline-none bg-transparent text-[11px]"
+                      onchange="updateStockNote(${leftId}, ${item.id}, 'L', this.value)"
+                      class="w-full border-b border-dashed border-slate-300 outline-none bg-transparent text-[11px] focus:border-amber-500"
                     />
                   </td>
 
-                  <!-- Delete Item Option -->
+                  <!-- Delete Item -->
                   <td class="p-2 border text-center">
-                    <button onclick="deleteCatalogItem(${item.id})" class="text-red-500 hover:text-red-700 text-xs font-bold px-2 py-1">🗑️</button>
+                    <button onclick="deleteCatalogItem(${item.id})" class="text-red-500 hover:text-red-700 text-sm p-1">🗑️</button>
                   </td>
                 </tr>
               `;
@@ -315,7 +333,7 @@
 
     async function directStockEdit(stockId, itemId, side, newQty) {
       const validQty = Math.max(0, newQty);
-      if (stockId) {
+      if (stockId && stockId !== 'null') {
         await dbClient.from('inventory').update({ quantity: validQty }).eq('id', stockId);
       } else {
         await dbClient.from('inventory').insert([{ item_id: itemId, side: side, quantity: validQty }]);
@@ -324,7 +342,7 @@
     }
 
     async function updateStockNote(stockId, itemId, side, noteText) {
-      if (stockId) {
+      if (stockId && stockId !== 'null') {
         await dbClient.from('inventory').update({ notes: noteText }).eq('id', stockId);
       } else {
         await dbClient.from('inventory').insert([{ item_id: itemId, side: side, quantity: 0, notes: noteText }]);
@@ -347,6 +365,7 @@
     window.updateStockNote = updateStockNote;
     window.deleteCatalogItem = deleteCatalogItem;
     window.renderBossTable = renderBossTable;
+    window.fetchData = fetchData;
 
     window.addEventListener('DOMContentLoaded', initApp);
   </script>
