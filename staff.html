@@ -3,35 +3,37 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VA AUTO - Staff Polishing Entry</title>
+  <title>VA AUTO - Staff Polishing Submission</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen pb-16">
 
+  <!-- Header -->
   <header class="bg-slate-900 text-white p-4 sticky top-0 z-50 shadow-md">
     <div class="max-w-xl mx-auto flex items-center justify-between">
       <div>
         <h1 class="font-bold text-lg text-amber-400">VA AUTO RESTORATION</h1>
-        <p class="text-xs text-slate-400">Staff Polishing Log Page</p>
+        <p class="text-xs text-slate-400">Staff Polishing Log</p>
       </div>
-      <div id="connectionStatus" class="text-xs px-2 py-1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
-        Connecting...
+      <div class="flex items-center gap-2">
+        <a href="./index.html" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded border border-slate-700">Main Portal</a>
+        <div id="connectionStatus" class="text-xs px-2 py-1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">Connecting...</div>
       </div>
     </div>
   </header>
 
   <main class="max-w-xl mx-auto p-4 space-y-4">
 
-    <!-- Search & Brand Filter Bar -->
+    <!-- Search & Brand Filter -->
     <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-3">
       <div>
-        <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Search Inventory</label>
+        <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Search Lamp Catalog</label>
         <input 
           type="text" 
           id="searchInput" 
-          placeholder="e.g. W205, 2 projector, F30, LED..." 
-          class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 p-2.5 outline-none transition"
+          placeholder="Search model or code (e.g. W205, F30, Camry)..." 
+          class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-amber-500"
           oninput="renderInventory()"
         />
       </div>
@@ -42,11 +44,9 @@
       </div>
     </div>
 
-    <!-- Inventory Listing Area -->
+    <!-- Lamp List -->
     <div id="inventoryContainer" class="space-y-4">
-      <div id="loadingText" class="text-center py-12 text-slate-400 text-sm">
-        Loading inventory database...
-      </div>
+      <div id="loadingText" class="text-center py-12 text-slate-400 text-sm">Loading lamp catalog...</div>
     </div>
 
   </main>
@@ -55,176 +55,119 @@
     const SUPABASE_URL = "https://ctamqhphvnjlrmnqhpwo.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN0YW1xaHBodm5qbHJtbnFocHdvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYxOTk4NTYsImV4cCI6MjEwMTc3NTg1Nn0.q4XC0xUmO1bvdTE4fw8VluR2_M1Nr-GznmnBrvqsEVs";
 
-    let dbClient;
-    let allItems = [];
-    let allInventory = [];
-    let selectedBrand = "ALL";
+    let dbClient, allItems = [], selectedBrand = "ALL";
 
     async function initApp() {
-      const statusEl = document.getElementById("connectionStatus");
-      const loadingEl = document.getElementById("loadingText");
-
       try {
         dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         await fetchData();
-
-        statusEl.innerText = "Live Database";
-        statusEl.className = "text-xs px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
+        document.getElementById("connectionStatus").innerText = "Live Database";
+        document.getElementById("connectionStatus").className = "text-xs px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
       } catch (err) {
-        console.error("Initialization Error:", err);
-        statusEl.innerText = "Connection Failed";
-        statusEl.className = "text-xs px-2 py-1 rounded bg-red-500/20 text-red-300 border border-red-500/30";
+        console.error(err);
       }
     }
 
     async function fetchData() {
-      const { data: items, error: itemsError } = await dbClient.from('items').select('*');
-      const { data: inv, error: invError } = await dbClient.from('inventory').select('*');
-
-      if (itemsError || invError) throw itemsError || invError;
-
+      const { data: items } = await dbClient.from('items').select('*');
       allItems = items || [];
-      allInventory = inv || [];
-
       renderBrandTabs();
       renderInventory();
     }
 
     function renderBrandTabs() {
-      const brands = ["ALL", ...new Set(allItems.map(item => item.brand))];
-      const container = document.getElementById("brandFilterContainer");
-
-      container.innerHTML = brands.map(b => `
-        <button 
-          onclick="setBrandFilter('${b}')"
-          class="px-3 py-1 text-xs font-semibold rounded-full border transition ${
-            selectedBrand === b 
-              ? 'bg-amber-500 text-slate-900 border-amber-500 shadow-sm' 
-              : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
-          }"
-        >
+      const brands = ["ALL", ...new Set(allItems.map(i => i.brand))];
+      document.getElementById("brandFilterContainer").innerHTML = brands.map(b => `
+        <button onclick="selectedBrand='${b}'; renderBrandTabs(); renderInventory();" 
+          class="px-3 py-1 text-xs font-semibold rounded-full border transition ${selectedBrand === b ? 'bg-amber-500 text-slate-900 border-amber-500 shadow-sm' : 'bg-slate-100 text-slate-600 border-slate-200'}">
           ${b}
         </button>
       `).join('');
     }
 
-    function setBrandFilter(brand) {
-      selectedBrand = brand;
-      renderBrandTabs();
-      renderInventory();
-    }
-
     function renderInventory() {
       const container = document.getElementById("inventoryContainer");
-      const searchInput = document.getElementById("searchInput");
-      const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : "";
+      const term = document.getElementById("searchInput").value.toLowerCase().trim();
 
-      const filteredItems = allItems.filter(item => {
-        const matchesBrand = selectedBrand === "ALL" || item.brand === selectedBrand;
-        const matchesSearch = 
-          (item.model_code && item.model_code.toLowerCase().includes(searchTerm)) ||
-          (item.series && item.series.toLowerCase().includes(searchTerm)) ||
-          (item.category && item.category.toLowerCase().includes(searchTerm)) ||
-          (item.spec_description && item.spec_description.toLowerCase().includes(searchTerm));
-
-        return matchesBrand && matchesSearch;
+      const filtered = allItems.filter(i => {
+        const matchB = selectedBrand === "ALL" || i.brand === selectedBrand;
+        const matchS = i.model_code.toLowerCase().includes(term) || i.series.toLowerCase().includes(term) || i.category.toLowerCase().includes(term);
+        return matchB && matchS;
       });
 
-      if (filteredItems.length === 0) {
-        container.innerHTML = `<div class="bg-white p-8 text-center rounded-xl border border-slate-200 text-slate-400 text-sm">No matching lamps found.</div>`;
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="bg-white p-6 text-center text-slate-400 text-sm rounded-xl border">No matching lamps found.</div>`;
         return;
       }
 
-      container.innerHTML = filteredItems.map(item => {
-        const itemStocks = allInventory.filter(inv => inv.item_id === item.id);
-        const leftStock = itemStocks.find(s => s.side === 'L');
-        const rightStock = itemStocks.find(s => s.side === 'R');
-
-        return `
-          <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <div class="bg-slate-50 p-3 border-b border-slate-200 flex justify-between items-start">
-              <div>
-                <div class="flex items-center gap-2">
-                  <span class="text-xs font-bold px-2 py-0.5 rounded bg-slate-200 text-slate-700">${item.brand}</span>
-                  <span class="text-xs font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">${item.category}</span>
-                </div>
-                <h3 class="font-bold text-slate-900 mt-1">${item.series} - ${item.model_code}</h3>
-                <p class="text-xs text-slate-500">${item.spec_description || 'Standard Spec'}</p>
-              </div>
+      container.innerHTML = filtered.map(item => `
+        <div class="bg-white rounded-xl border border-slate-200 p-4 space-y-3 shadow-sm">
+          <div class="border-b pb-2">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold bg-slate-200 text-slate-700 px-2 py-0.5 rounded">${item.brand}</span>
+              <span class="text-xs font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">${item.category}</span>
             </div>
-
-            <div class="p-3 space-y-3">
-              ${renderStockRow(item, 'L', leftStock)}
-              ${renderStockRow(item, 'R', rightStock)}
-            </div>
+            <h3 class="font-bold text-slate-900 mt-1">${item.series} - ${item.model_code}</h3>
+            <p class="text-xs text-slate-500">${item.spec_description || 'Standard Spec'}</p>
           </div>
-        `;
-      }).join('');
+
+          <!-- Left Side Submission -->
+          ${renderSideRow(item, 'L')}
+          <!-- Right Side Submission -->
+          ${renderSideRow(item, 'R')}
+        </div>
+      `).join('');
     }
 
-    function renderStockRow(item, side, stockObj) {
-      const qty = stockObj ? stockObj.quantity : 0;
-      const notes = stockObj && stockObj.notes ? stockObj.notes : '';
-
+    function renderSideRow(item, side) {
       return `
         <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 space-y-2">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
-              <span class="w-7 h-7 flex items-center justify-center font-bold text-xs rounded ${side === 'L' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}">
-                ${side}
-              </span>
+              <span class="w-6 h-6 flex items-center justify-center font-bold text-xs rounded ${side === 'L' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}">${side}</span>
               <span class="text-xs font-semibold text-slate-700">Side ${side === 'L' ? 'Left' : 'Right'}</span>
-              <span class="text-xs text-slate-400">(Current Stock: ${qty})</span>
             </div>
 
             <button 
-              onclick="submitPolishedLamp(${item.id}, '${item.brand} ${item.series} (${item.model_code})', '${side}')"
-              class="text-xs font-bold bg-amber-500 text-slate-900 px-3 py-1.5 rounded-lg hover:bg-amber-400 active:scale-95 transition shadow-sm"
+              onclick="submitPolished(${item.id}, '${item.brand} ${item.series} (${item.model_code})', '${side}')" 
+              class="text-xs bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold px-3 py-1.5 rounded-lg shadow-sm active:scale-95 transition"
             >
               ✨ Submit Polished
             </button>
           </div>
 
-          <div>
-            <input 
-              type="text" 
-              id="staffRemark_${item.id}_${side}"
-              placeholder="Add staff remark (e.g., polished lens, bracket fixed)..." 
-              value="${notes}" 
-              class="w-full text-xs bg-white border border-slate-300 rounded-md p-1.5 focus:ring-1 focus:ring-amber-500 outline-none text-slate-700"
-            />
-          </div>
+          <input 
+            type="text" 
+            id="remark_${item.id}_${side}" 
+            placeholder="Add remark (e.g., polished lens, bracket fixed, minor scratch)..." 
+            class="w-full text-xs p-2 border border-slate-300 rounded-md bg-white outline-none focus:border-amber-500" 
+          />
         </div>
       `;
     }
 
-    async function submitPolishedLamp(itemId, title, side) {
-      const remarkInput = document.getElementById(`staffRemark_${itemId}_${side}`);
-      const remark = remarkInput ? remarkInput.value.trim() : "";
-
+    async function submitPolished(itemId, title, side) {
+      const remarkVal = document.getElementById(`remark_${itemId}_${side}`).value.trim();
       const now = new Date();
-      const timeStr = `${now.getDate()}/${now.getMonth()+1} ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
-      const finalRemark = remark ? `${remark} (Logged ${timeStr})` : `Polished on ${timeStr}`;
 
       const { error } = await dbClient.from('pending_approvals').insert([{
         item_id: itemId,
-        side: side,
         item_title: title,
-        remark: finalRemark
+        side: side,
+        remark: remarkVal || "Polished lamp submitted",
+        submitted_at: now.toISOString()
       }]);
 
       if (error) {
         alert("Submission Error: " + error.message);
       } else {
-        alert(`Submitted for Boss Approval:\n${title} [${side}-Side]`);
-        if (remarkInput) remarkInput.value = "";
+        alert(`Submitted for Boss Approval!\n${title} [${side}-side]`);
+        document.getElementById(`remark_${itemId}_${side}`).value = "";
       }
     }
 
     window.renderInventory = renderInventory;
-    window.setBrandFilter = setBrandFilter;
-    window.submitPolishedLamp = submitPolishedLamp;
-
+    window.submitPolished = submitPolished;
     window.addEventListener('DOMContentLoaded', initApp);
   </script>
 </body>
