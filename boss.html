@@ -46,10 +46,10 @@
         <div id="pendingList" class="space-y-2 text-xs"></div>
       </div>
 
-      <!-- Approvals History Record (Last 3 Months) -->
+      <!-- Approvals History Record -->
       <div class="bg-white p-5 rounded-xl border border-slate-200 space-y-3 shadow-sm">
         <div class="flex justify-between items-center border-b pb-2">
-          <h2 class="font-bold text-slate-900 text-sm">📜 Approvals History Record (Last 3 Months)</h2>
+          <h2 class="font-bold text-slate-900 text-sm">📜 Approvals History Record</h2>
           <button onclick="fetchHistoryRecord()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded font-semibold">🔄 Refresh History</button>
         </div>
         <div id="historyTableContainer" class="overflow-x-auto text-xs">
@@ -184,20 +184,21 @@
 
     async function fetchHistoryRecord() {
       const container = document.getElementById("historyTableContainer");
-      
-      // Calculate 3 months ago timestamp
-      const threeMonthsAgo = new Date();
-      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
       const { data: history, error } = await dbClient
         .from('pending_approvals')
         .select('*')
         .neq('status', 'PENDING')
-        .gte('submitted_at', threeMonthsAgo.toISOString())
         .order('submitted_at', { ascending: false });
 
-      if (error || !history || history.length === 0) {
-        container.innerHTML = `<div class="text-slate-400 italic py-2">No approval history recorded in the last 3 months.</div>`;
+      if (error) {
+        console.error("History error:", error);
+        container.innerHTML = `<div class="text-red-500 italic py-2">Error loading history: ${error.message}</div>`;
+        return;
+      }
+
+      if (!history || history.length === 0) {
+        container.innerHTML = `<div class="text-slate-400 italic py-2">No approval history records found yet.</div>`;
         return;
       }
 
