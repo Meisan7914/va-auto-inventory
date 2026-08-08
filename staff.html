@@ -3,19 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VA AUTO - Staff Submission</title>
+  <title>VA AUTO - Staff Polishing Submission</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen pb-16">
 
+  <!-- Header -->
   <header class="bg-slate-900 text-white p-4 sticky top-0 z-50 shadow-md">
     <div class="max-w-xl mx-auto flex items-center justify-between">
       <div>
         <h1 class="font-bold text-lg text-amber-400">VA AUTO RESTORATION</h1>
-        <p class="text-xs text-slate-400">Staff Polishing Log</p>
+        <p class="text-xs text-slate-400">Staff Polishing Submission Log</p>
       </div>
-      <a href="./index.html" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded border border-slate-700">Main Portal</a>
+      <a href="./index.html" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded border border-slate-700">Portal</a>
     </div>
   </header>
 
@@ -28,7 +29,7 @@
         <input 
           type="text" 
           id="searchInput" 
-          placeholder="Search model code (e.g. W205, F30, Camry)..." 
+          placeholder="Search model or code (e.g. W205, F30, Camry)..." 
           class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-amber-500"
           oninput="renderInventory()"
         />
@@ -40,9 +41,9 @@
       </div>
     </div>
 
-    <!-- Catalog List -->
+    <!-- Lamp List -->
     <div id="inventoryContainer" class="space-y-4">
-      <div id="loadingText" class="text-center py-12 text-slate-400 text-sm">Loading catalog...</div>
+      <div id="loadingText" class="text-center py-12 text-slate-400 text-sm">Loading lamp catalog...</div>
     </div>
 
   </main>
@@ -131,7 +132,7 @@
               <input 
                 type="text" 
                 id="staffName_${item.id}_${side}" 
-                placeholder="Enter your name..." 
+                placeholder="Enter staff name..." 
                 class="w-full text-xs p-2 border border-slate-300 rounded-md bg-white outline-none focus:border-amber-500 font-semibold text-slate-800" 
               />
             </div>
@@ -140,7 +141,7 @@
               <input 
                 type="text" 
                 id="remark_${item.id}_${side}" 
-                placeholder="e.g., polished lens, bracket fixed..." 
+                placeholder="e.g., polished lens, fixed bracket..." 
                 class="w-full text-xs p-2 border border-slate-300 rounded-md bg-white outline-none focus:border-amber-500 text-slate-600" 
               />
             </div>

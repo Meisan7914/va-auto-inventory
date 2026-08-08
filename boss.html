@@ -74,24 +74,13 @@
         <button onclick="addItem()" class="w-full bg-slate-900 text-white font-bold py-2 rounded text-xs hover:bg-slate-800 transition">Save to Catalog</button>
       </div>
 
-      <!-- Master Editable Inventory Table -->
+      <!-- Master Inventory Table (With + and - Buttons) -->
       <div class="bg-white p-5 rounded-xl border border-slate-200 space-y-3 shadow-sm">
         <div class="flex justify-between items-center border-b pb-2">
-          <h2 class="font-bold text-slate-900 text-sm">📋 Master Live Inventory Table</h2>
+          <h2 class="font-bold text-slate-900 text-sm">📋 Editable Master Inventory Table</h2>
           <input type="text" id="bossFilter" placeholder="Filter inventory..." oninput="renderTable()" class="text-xs p-1.5 border rounded outline-none" />
         </div>
         <div id="tableContainer" class="overflow-x-auto text-xs"></div>
-      </div>
-
-      <!-- Sales History Log -->
-      <div class="bg-white p-5 rounded-xl border border-slate-200 space-y-3 shadow-sm">
-        <div class="flex justify-between items-center border-b pb-2">
-          <h2 class="font-bold text-slate-900 text-sm">🛍️ Recent Sales Log History</h2>
-          <button onclick="fetchSalesLog()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded font-semibold">🔄 Refresh Log</button>
-        </div>
-        <div id="salesLogContainer" class="overflow-x-auto text-xs">
-          <div class="text-slate-400 py-2">Loading sales log...</div>
-        </div>
       </div>
 
     </div>
@@ -113,7 +102,6 @@
         document.getElementById("pinScreen").classList.add("hidden");
         document.getElementById("dashboard").classList.remove("hidden");
         fetchData();
-        fetchSalesLog();
       } else {
         document.getElementById("pinErr").classList.remove("hidden");
       }
@@ -150,7 +138,7 @@
             <div>
               <div class="font-bold text-slate-900">${item.item_title} <span class="px-1.5 py-0.5 rounded text-[10px] ${item.side === 'L' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}">${item.side}-side</span></div>
               <div class="text-slate-600 text-[11px] mt-0.5">
-                👤 <strong>Staff:</strong> ${item.staff_name || 'Unspecified'} • 📅 <strong>Date:</strong> ${dateStr}
+                👤 <strong>Staff:</strong> ${item.staff_name || 'Unspecified'} • 📅 <strong>Submitted:</strong> ${dateStr}
               </div>
               <div class="text-slate-500 text-[11px]">Remark: "${item.remark}"</div>
             </div>
@@ -203,14 +191,14 @@
       );
 
       container.innerHTML = `
-        <table class="w-full text-left border-collapse border border-slate-200 min-w-[650px]">
+        <table class="w-full text-left border-collapse border border-slate-200 min-w-[600px]">
           <thead>
             <tr class="bg-slate-100 text-slate-700">
               <th class="p-2 border">Brand</th>
               <th class="p-2 border">Model / Series</th>
               <th class="p-2 border text-center">Left Stock (L)</th>
               <th class="p-2 border text-center">Right Stock (R)</th>
-              <th class="p-2 border text-center">Actions</th>
+              <th class="p-2 border text-center">Delete</th>
             </tr>
           </thead>
           <tbody>
@@ -229,84 +217,27 @@
                   <td class="p-2 border font-bold text-slate-800">${item.brand}</td>
                   <td class="p-2 border font-medium">${item.series} (${item.model_code}) <div class="text-[10px] text-slate-400">${item.category}</div></td>
                   
-                  <!-- Left Stock Control -->
+                  <!-- Left Stock Control (+ / -) -->
                   <td class="p-2 border text-center">
-                    <div class="flex items-center justify-center gap-1.5">
-                      <button onclick="editQty(${leftId}, ${item.id}, 'L', ${leftQty - 1})" class="w-6 h-6 bg-slate-200 rounded font-bold">-</button>
-                      <span class="font-bold min-w-[20px] ${leftQty > 0 ? 'text-emerald-600' : 'text-slate-400'}">${leftQty}</span>
-                      <button onclick="editQty(${leftId}, ${item.id}, 'L', ${leftQty + 1})" class="w-6 h-6 bg-amber-500 text-slate-900 rounded font-bold">+</button>
-                      <button onclick="markSold(${leftId}, ${item.id}, 'L', ${leftQty})" class="text-[11px] bg-red-100 text-red-700 hover:bg-red-200 font-bold px-1.5 py-0.5 rounded ml-1">🛒 Sold</button>
+                    <div class="flex items-center justify-center gap-2">
+                      <button onclick="editQty(${leftId}, ${item.id}, 'L', ${leftQty - 1})" class="w-7 h-7 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded font-bold text-sm shadow-sm active:scale-95">-</button>
+                      <span class="font-bold min-w-[24px] text-sm ${leftQty > 0 ? 'text-emerald-600' : 'text-slate-400'}">${leftQty}</span>
+                      <button onclick="editQty(${leftId}, ${item.id}, 'L', ${leftQty + 1})" class="w-7 h-7 bg-amber-500 hover:bg-amber-400 text-slate-900 rounded font-bold text-sm shadow-sm active:scale-95">+</button>
                     </div>
                   </td>
 
-                  <!-- Right Stock Control -->
+                  <!-- Right Stock Control (+ / -) -->
                   <td class="p-2 border text-center">
-                    <div class="flex items-center justify-center gap-1.5">
-                      <button onclick="editQty(${rightId}, ${item.id}, 'R', ${rightQty - 1})" class="w-6 h-6 bg-slate-200 rounded font-bold">-</button>
-                      <span class="font-bold min-w-[20px] ${rightQty > 0 ? 'text-emerald-600' : 'text-slate-400'}">${rightQty}</span>
-                      <button onclick="editQty(${rightId}, ${item.id}, 'R', ${rightQty + 1})" class="w-6 h-6 bg-amber-500 text-slate-900 rounded font-bold">+</button>
-                      <button onclick="markSold(${rightId}, ${item.id}, 'R', ${rightQty})" class="text-[11px] bg-red-100 text-red-700 hover:bg-red-200 font-bold px-1.5 py-0.5 rounded ml-1">🛒 Sold</button>
+                    <div class="flex items-center justify-center gap-2">
+                      <button onclick="editQty(${rightId}, ${item.id}, 'R', ${rightQty - 1})" class="w-7 h-7 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded font-bold text-sm shadow-sm active:scale-95">-</button>
+                      <span class="font-bold min-w-[24px] text-sm ${rightQty > 0 ? 'text-emerald-600' : 'text-slate-400'}">${rightQty}</span>
+                      <button onclick="editQty(${rightId}, ${item.id}, 'R', ${rightQty + 1})" class="w-7 h-7 bg-amber-500 hover:bg-amber-400 text-slate-900 rounded font-bold text-sm shadow-sm active:scale-95">+</button>
                     </div>
                   </td>
 
                   <td class="p-2 border text-center">
-                    <button onclick="deleteItem(${item.id})" class="text-red-500 font-bold text-xs p-1">🗑️</button>
+                    <button onclick="deleteItem(${item.id})" class="text-red-500 font-bold text-xs p-1 hover:text-red-700">🗑️</button>
                   </td>
-                </tr>
-              `;
-            }).join('')}
-          </tbody>
-        </table>
-      `;
-    }
-
-    async function markSold(stockId, itemId, side, currentQty) {
-      if (currentQty <= 0) {
-        alert("Cannot mark as sold—current stock is 0.");
-        return;
-      }
-      const now = new Date();
-      const dateStr = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-
-      if (confirm(`Mark 1 unit of ${side}-side as SOLD on ${dateStr}?`)) {
-        if (stockId) {
-          await dbClient.from('inventory').update({ quantity: currentQty - 1, notes: `Sold on ${dateStr}` }).eq('id', stockId);
-        }
-        await dbClient.from('sales_log').insert([{ item_id: itemId, side: side, sold_at: now.toISOString(), notes: `Sold on ${dateStr}` }]);
-        fetchData();
-        fetchSalesLog();
-      }
-    }
-
-    async function fetchSalesLog() {
-      const container = document.getElementById("salesLogContainer");
-      const { data: sales } = await dbClient.from('sales_log').select('*, items(brand, series, model_code)').order('sold_at', { ascending: false });
-
-      if (!sales || sales.length === 0) {
-        container.innerHTML = `<div class="text-slate-400 italic py-2">No sales recorded yet.</div>`;
-        return;
-      }
-
-      container.innerHTML = `
-        <table class="w-full text-left border-collapse border border-slate-200 min-w-[500px]">
-          <thead>
-            <tr class="bg-slate-100 text-slate-700">
-              <th class="p-2 border">Sold Date & Time</th>
-              <th class="p-2 border">Item Details</th>
-              <th class="p-2 border text-center">Side</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${sales.map(s => {
-              const d = new Date(s.sold_at);
-              const dateFormatted = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-              const itemTitle = s.items ? `${s.items.brand} ${s.items.series} (${s.items.model_code})` : `Item #${s.item_id}`;
-
-              return `
-                <tr class="hover:bg-slate-50 border-b">
-                  <td class="p-2 border font-bold text-slate-900">${dateFormatted}</td>
-                  <td class="p-2 border font-medium">${itemTitle}</td>
-                  <td class="p-2 border text-center font-bold ${s.side === 'L' ? 'text-blue-600' : 'text-purple-600'}">${s.side}</td>
                 </tr>
               `;
             }).join('')}
@@ -337,10 +268,8 @@
     window.approveItem = approveItem;
     window.rejectItem = rejectItem;
     window.editQty = editQty;
-    window.markSold = markSold;
     window.deleteItem = deleteItem;
     window.renderTable = renderTable;
-    window.fetchSalesLog = fetchSalesLog;
 
     window.addEventListener('DOMContentLoaded', initApp);
   </script>
