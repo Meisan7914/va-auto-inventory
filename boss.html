@@ -26,12 +26,12 @@
     <div id="pinScreen" class="bg-white p-6 rounded-xl border max-w-md mx-auto text-center space-y-4 mt-8 shadow-sm">
       <div class="text-2xl">🔒</div>
       <h2 class="font-bold text-slate-900">Boss Dashboard Access</h2>
-      <p class="text-xs text-slate-500">Enter your 4-digit PIN to access manager controls.</p>
+      <p class="text-xs text-slate-500">Enter your 4-digit manager PIN to access dashboard controls.</p>
       <div class="flex justify-center gap-2">
-        <input type="password" id="pinInput" maxlength="4" placeholder="1234" class="w-28 p-2 border text-center font-bold rounded text-lg outline-none focus:ring-2 focus:ring-amber-500" />
+        <input type="password" id="pinInput" maxlength="4" placeholder="****" class="w-28 p-2 border text-center font-bold rounded text-lg outline-none focus:ring-2 focus:ring-amber-500" />
         <button onclick="checkPin()" class="bg-amber-500 font-bold px-4 py-2 rounded text-slate-900 text-sm hover:bg-amber-400">Unlock</button>
       </div>
-      <p id="pinErr" class="text-xs text-red-500 hidden">Incorrect PIN. Try 1234.</p>
+      <p id="pinErr" class="text-xs text-red-500 hidden">Incorrect PIN. Please try again.</p>
     </div>
 
     <!-- Main Boss Dashboard -->
@@ -110,7 +110,7 @@
     }
 
     function checkPin() {
-      if (document.getElementById("pinInput").value === "1234") {
+      if (document.getElementById("pinInput").value === "0116") {
         document.getElementById("pinScreen").classList.add("hidden");
         document.getElementById("dashboard").classList.remove("hidden");
         fetchData();
