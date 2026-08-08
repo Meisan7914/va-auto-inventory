@@ -57,7 +57,7 @@
     const SUPABASE_URL = "https://ctamqhphvnjlrmnqhpwo.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN0YW1xaHBodm5qbHJtbnFocHdvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYxOTk4NTYsImV4cCI6MjEwMTc3NTg1Nn0.q4XC0xUmO1bvdTE4fw8VluR2_M1Nr-GznmnBrvqsEVs";
 
-    let supabase;
+    let dbClient;
     let allItems = [];
     let allInventory = [];
     let selectedBrand = "ALL";
@@ -71,7 +71,7 @@
           throw new Error("Supabase JS Library failed to load.");
         }
 
-        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         await fetchData();
 
         statusEl.innerText = "Live Database";
@@ -93,8 +93,8 @@
     }
 
     async function fetchData() {
-      const { data: items, error: itemsError } = await supabase.from('items').select('*');
-      const { data: inv, error: invError } = await supabase.from('inventory').select('*');
+      const { data: items, error: itemsError } = await dbClient.from('items').select('*');
+      const { data: inv, error: invError } = await dbClient.from('inventory').select('*');
 
       if (itemsError) throw itemsError;
       if (invError) throw invError;
@@ -227,13 +227,13 @@
       const newQty = Math.max(0, currentQty + change);
 
       if (stockId) {
-        const { error } = await supabase.from('inventory').update({ quantity: newQty }).eq('id', stockId);
+        const { error } = await dbClient.from('inventory').update({ quantity: newQty }).eq('id', stockId);
         if (!error) {
           const item = allInventory.find(i => i.id === stockId);
           if (item) item.quantity = newQty;
         }
       } else {
-        const { data, error } = await supabase.from('inventory').insert([{ item_id: itemId, side: side, quantity: newQty }]).select();
+        const { data, error } = await dbClient.from('inventory').insert([{ item_id: itemId, side: side, quantity: newQty }]).select();
         if (!error && data) allInventory.push(data[0]);
       }
 
@@ -242,11 +242,11 @@
 
     async function updateNote(stockId, itemId, side, newNote) {
       if (stockId) {
-        await supabase.from('inventory').update({ notes: newNote }).eq('id', stockId);
+        await dbClient.from('inventory').update({ notes: newNote }).eq('id', stockId);
         const item = allInventory.find(i => i.id === stockId);
         if (item) item.notes = newNote;
       } else if (newNote.trim() !== '') {
-        const { data } = await supabase.from('inventory').insert([{ item_id: itemId, side: side, quantity: 0, notes: newNote }]).select();
+        const { data } = await dbClient.from('inventory').insert([{ item_id: itemId, side: side, quantity: 0, notes: newNote }]).select();
         if (data) allInventory.push(data[0]);
       }
     }
