@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VA AUTO - Boss Management Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen pb-16">
+
+  <header class="bg-slate-900 text-white p-4 sticky top-0 z-50 shadow-md">
+    <div class="max-w-3xl mx-auto flex items-center justify-between">
+      <div>
+        <h1 class="font-bold text-lg text-amber-400">VA AUTO RESTORATION</h1>
+        <p class="text-xs text-slate-400">Boss Management & Approvals</p>
+      </div>
+      <div id="connectionStatus" class="text-xs px-2 py-1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+        Connecting...
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-3xl mx-auto p-4 space-y-6">
+
+    <!-- PIN Screen -->
+    <div id="bossAuthBox" class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 text-center space-y-4 max-w-md mx-auto mt-8">
+      <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto text-xl">🔒</div>
+      <div>
+        <h2 class="font-bold text-slate-900 text-base">Boss Access Only</h2>
+        <p class="text-xs text-slate-500 mt-1">Enter PIN to approve staff submissions and manage inventory.</p>
+      </div>
+      <div class="flex justify-center gap-2">
+        <input type="password" id="bossPinInput" maxlength="4" placeholder="1234" class="w-32 border border-slate-300 rounded-lg p-2 text-center text-lg tracking-widest outline-none focus:ring-2 focus:ring-amber-500" />
+        <button onclick="verifyBossPin()" class="bg-amber-500 text-slate-900 font-bold px-4 py-2 rounded-lg hover:bg-amber-400 transition text-sm">Unlock Dashboard</button>
+      </div>
+      <p id="pinError" class="text-xs text-red-500 hidden">Incorrect PIN. Try 1234.</p>
+    </div>
+
+    <!-- Main Dashboard Content -->
+    <div id="bossDashboardContent" class="hidden space-y-6">
+
+      <!-- Pending Approval Queue -->
+      <div class="bg-white p-5 rounded-xl shadow-sm border border-amber-200 space-y-3 bg-amber-50/20">
+        <h2 class="font-bold text-slate-900 text-sm border-b pb-2 flex justify-between items-center">
+          <span>⏳ Pending Staff Polishing Approvals</span>
+          <span id="pendingCountBadge" class="text-xs bg-amber-500 text-slate-900 font-bold px-2.5 py-0.5 rounded-full">0 Pending</span>
+        </h2>
+        <div id="pendingContainer" class="space-y-2 text-xs">
+          <div class="text-slate-400 py-2">Loading pending approvals...</div>
+        </div>
+      </div>
+
+      <!-- Add New Brand / Model Catalog Form -->
+      <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-4">
+        <h2 class="font-bold text-slate-900 text-sm border-b pb-2 flex items-center gap-2">
+          <span>➕</span> Add New Brand / Model to Catalog
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+          <div>
+            <label class="block font-semibold text-slate-600 mb-1">Brand</label>
+            <input type="text" id="newBrand" placeholder="e.g. Mercedes, BMW, Porsche" class="w-full p-2 border rounded-lg bg-slate-50" />
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-600 mb-1">Model Code</label>
+            <input type="text" id="newModelCode" placeholder="e.g. W205, F30, XV50" class="w-full p-2 border rounded-lg bg-slate-50" />
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-600 mb-1">Series / Model Name</label>
+            <input type="text" id="newSeries" placeholder="e.g. C-Class, 3 Series, Camry" class="w-full p-2 border rounded-lg bg-slate-50" />
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-600 mb-1">Category</label>
+            <select id="newCategory" class="w-full p-2 border rounded-lg bg-slate-50">
+              <option value="Headlamp">Headlamp</option>
+              <option value="Tail Lamp">Tail Lamp</option>
+              <option value="Fog Lamp">Fog Lamp</option>
+              <option value="Cover / Lens">Cover / Lens</option>
+            </select>
+          </div>
+          <div class="md:col-span-2">
+            <label class="block font-semibold text-slate-600 mb-1">Spec Description</label>
+            <input type="text" id="newSpec" placeholder="e.g. Pre-facelift 2 projector, LED..." class="w-full p-2 border rounded-lg bg-slate-50" />
+          </div>
+        </div>
+        <button onclick="createNewItem()" class="w-full bg-slate-900 text-white font-bold py-2.5 rounded-lg text-xs hover:bg-slate-800 transition">
+          Save Item to Inventory Catalog
+        </button>
+      </div>
+
+      <!-- Master Inventory Overview Table -->
+      <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-3">
+        <h2 class="font-bold text-slate-900 text-sm border-b pb-2 flex justify-between items-center">
+          <span>📋 Master Inventory Overview</span>
+          <button onclick="fetchData()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded">🔄 Refresh</button>
+        </h2>
+        <div id="bossTableContainer" class="overflow-x-auto text-xs">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <script>
+    const SUPABASE_URL = "https://ctamqhphvnjlrmnqhpwo.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN0YW1xaHBodm5qbHJtbnFocHdvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYxOTk4NTYsImV4cCI6MjEwMTc3NTg1Nn0.q4XC0xUmO1bvdTE4fw8VluR2_M1Nr-GznmnBrvqsEVs";
+
+    let dbClient;
+    let allItems = [];
+    let allInventory = [];
+    let pendingList = [];
+
+    async function initApp() {
+      const statusEl = document.getElementById("connectionStatus");
+      try {
+        dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        statusEl.innerText = "Live Database";
+        statusEl.className = "text-xs px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
+      } catch (err) {
+        console.error("Initialization Error:", err);
+        statusEl.innerText = "Connection Failed";
+        statusEl.className = "text-xs px-2 py-1 rounded bg-red-500/20 text-red-300 border border-red-500/30";
+      }
+    }
+
+    function verifyBossPin() {
+      const pin = document.getElementById("bossPinInput").value;
+      if (pin === "1234") {
+        document.getElementById("bossAuthBox").classList.add("hidden");
+        document.getElementById("bossDashboardContent").classList.remove("hidden");
+        fetchData();
+      } else {
+        document.getElementById("pinError").classList.remove("hidden");
+      }
+    }
+
+    async function fetchData() {
+      const { data: items } = await dbClient.from('items').select('*');
+      const { data: inv } = await dbClient.from('inventory').select('*');
+      const { data: pending } = await dbClient.from('pending_approvals').select('*').eq('status', 'PENDING');
+
+      allItems = items || [];
+      allInventory = inv || [];
+      pendingList = pending || [];
+
+      renderPendingQueue();
+      renderBossTable();
+    }
+
+    function renderPendingQueue() {
+      const container = document.getElementById("pendingContainer");
+      document.getElementById("pendingCountBadge").innerText = `${pendingList.length} Pending`;
+
+      if (pendingList.length === 0) {
+        container.innerHTML = `<div class="text-slate-400 italic py-2">No pending staff submissions right now.</div>`;
+        return;
+      }
+
+      container.innerHTML = pendingList.map(item => `
+        <div class="bg-white p-3 rounded-lg border border-amber-200 flex flex-wrap items-center justify-between gap-2 shadow-sm">
+          <div>
+            <div class="font-bold text-slate-900">${item.item_title} <span class="px-1.5 py-0.5 rounded text-[10px] ${item.side === 'L' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}">${item.side}-Side</span></div>
+            <p class="text-slate-600 text-[11px]">Remark: "${item.remark}"</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="approveSubmission(${item.id}, ${item.item_id}, '${item.side}', '${item.remark}')" class="bg-emerald-600 text-white font-bold px-3 py-1 rounded-md hover:bg-emerald-500 transition">Approve (+1 Stock)</button>
+            <button onclick="rejectSubmission(${item.id})" class="bg-red-100 text-red-600 font-bold px-2.5 py-1 rounded-md hover:bg-red-200 transition">Reject</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function approveSubmission(pendingId, itemId, side, remark) {
+      const { data: existing } = await dbClient.from('inventory').select('*').eq('item_id', itemId).eq('side', side).single();
+
+      if (existing) {
+        const newQty = existing.quantity + 1;
+        await dbClient.from('inventory').update({ quantity: newQty, notes: remark }).eq('id', existing.id);
+      } else {
+        await dbClient.from('inventory').insert([{ item_id: itemId, side: side, quantity: 1, notes: remark }]);
+      }
+
+      await dbClient.from('pending_approvals').update({ status: 'APPROVED' }).eq('id', pendingId);
+      fetchData();
+    }
+
+    async function rejectSubmission(pendingId) {
+      await dbClient.from('pending_approvals').update({ status: 'REJECTED' }).eq('id', pendingId);
+      fetchData();
+    }
+
+    async function createNewItem() {
+      const brand = document.getElementById("newBrand").value.trim();
+      const model_code = document.getElementById("newModelCode").value.trim();
+      const series = document.getElementById("newSeries").value.trim();
+      const category = document.getElementById("newCategory").value;
+      const spec_description = document.getElementById("newSpec").value.trim();
+
+      if (!brand || !model_code) {
+        alert("Please enter at least a Brand and Model Code.");
+        return;
+      }
+
+      const { error } = await dbClient.from('items').insert([{
+        brand, model_code, series, category, spec_description
+      }]);
+
+      if (error) {
+        alert("Error adding item: " + error.message);
+      } else {
+        alert("New item added to catalog successfully!");
+        document.getElementById("newBrand").value = '';
+        document.getElementById("newModelCode").value = '';
+        document.getElementById("newSeries").value = '';
+        document.getElementById("newSpec").value = '';
+        fetchData();
+      }
+    }
+
+    function renderBossTable() {
+      const container = document.getElementById("bossTableContainer");
+
+      container.innerHTML = `
+        <table class="w-full text-left border-collapse border border-slate-200">
+          <thead>
+            <tr class="bg-slate-100 text-slate-700">
+              <th class="p-2 border">Brand</th>
+              <th class="p-2 border">Model / Series</th>
+              <th class="p-2 border">Category</th>
+              <th class="p-2 border text-center">Left (L)</th>
+              <th class="p-2 border text-center">Right (R)</th>
+              <th class="p-2 border">Latest Remarks</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${allItems.map(item => {
+              const itemStocks = allInventory.filter(inv => inv.item_id === item.id);
+              const left = itemStocks.find(s => s.side === 'L');
+              const right = itemStocks.find(s => s.side === 'R');
+
+              const leftQty = left ? left.quantity : 0;
+              const rightQty = right ? right.quantity : 0;
+              const remarks = [left?.notes, right?.notes].filter(Boolean).join(' | ') || '-';
+
+              return `
+                <tr class="hover:bg-slate-50 border-b">
+                  <td class="p-2 border font-bold text-slate-800">${item.brand}</td>
+                  <td class="p-2 border font-medium">${item.series} (${item.model_code})</td>
+                  <td class="p-2 border text-slate-600">${item.category}</td>
+                  <td class="p-2 border text-center font-bold ${leftQty > 0 ? 'text-emerald-600 bg-emerald-50' : 'text-slate-400'}">${leftQty}</td>
+                  <td class="p-2 border text-center font-bold ${rightQty > 0 ? 'text-emerald-600 bg-emerald-50' : 'text-slate-400'}">${rightQty}</td>
+                  <td class="p-2 border text-slate-600 text-xs">${remarks}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    window.verifyBossPin = verifyBossPin;
+    window.createNewItem = createNewItem;
+    window.approveSubmission = approveSubmission;
+    window.rejectSubmission = rejectSubmission;
+    window.fetchData = fetchData;
+
+    window.addEventListener('DOMContentLoaded', initApp);
+  </script>
+</body>
+</html>
