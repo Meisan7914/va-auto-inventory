@@ -110,9 +110,11 @@
     }
 
     function checkPin() {
-      if (document.getElementById("pinInput").value === "0116") {
+      const enteredPin = document.getElementById("pinInput").value;
+      if (enteredPin === "0116") {
         document.getElementById("pinScreen").classList.add("hidden");
         document.getElementById("dashboard").classList.remove("hidden");
+        document.getElementById("pinErr").classList.add("hidden");
         fetchData();
         fetchHistoryRecord();
       } else {
