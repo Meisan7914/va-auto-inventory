@@ -9,6 +9,7 @@
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen pb-16">
 
+  <!-- Header -->
   <header class="bg-slate-900 text-white p-4 sticky top-0 z-50 shadow-md">
     <div class="max-w-4xl mx-auto flex items-center justify-between">
       <div>
@@ -45,6 +46,17 @@
         <div id="pendingList" class="space-y-2 text-xs"></div>
       </div>
 
+      <!-- Approvals History Record (Last 3 Months) -->
+      <div class="bg-white p-5 rounded-xl border border-slate-200 space-y-3 shadow-sm">
+        <div class="flex justify-between items-center border-b pb-2">
+          <h2 class="font-bold text-slate-900 text-sm">📜 Approvals History Record (Last 3 Months)</h2>
+          <button onclick="fetchHistoryRecord()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded font-semibold">🔄 Refresh History</button>
+        </div>
+        <div id="historyTableContainer" class="overflow-x-auto text-xs">
+          <div class="text-slate-400 py-2">Loading history...</div>
+        </div>
+      </div>
+
       <!-- Add New Category / Model Form -->
       <div class="bg-white p-5 rounded-xl border border-slate-200 space-y-3 shadow-sm">
         <h2 class="font-bold text-slate-900 text-sm border-b pb-2">➕ Add New Category / Model to Catalog</h2>
@@ -74,10 +86,10 @@
         <button onclick="addItem()" class="w-full bg-slate-900 text-white font-bold py-2 rounded text-xs hover:bg-slate-800 transition">Save to Catalog</button>
       </div>
 
-      <!-- Master Inventory Table (With + and - Buttons) -->
+      <!-- Master Editable Inventory Table -->
       <div class="bg-white p-5 rounded-xl border border-slate-200 space-y-3 shadow-sm">
         <div class="flex justify-between items-center border-b pb-2">
-          <h2 class="font-bold text-slate-900 text-sm">📋 Editable Master Inventory Table</h2>
+          <h2 class="font-bold text-slate-900 text-sm">📋 Master Live Inventory Table</h2>
           <input type="text" id="bossFilter" placeholder="Filter inventory..." oninput="renderTable()" class="text-xs p-1.5 border rounded outline-none" />
         </div>
         <div id="tableContainer" class="overflow-x-auto text-xs"></div>
@@ -102,6 +114,7 @@
         document.getElementById("pinScreen").classList.add("hidden");
         document.getElementById("dashboard").classList.remove("hidden");
         fetchData();
+        fetchHistoryRecord();
       } else {
         document.getElementById("pinErr").classList.remove("hidden");
       }
@@ -110,7 +123,7 @@
     async function fetchData() {
       const { data: items } = await dbClient.from('items').select('*');
       const { data: inv } = await dbClient.from('inventory').select('*');
-      const { data: pending } = await dbClient.from('pending_approvals').select('*').eq('status', 'PENDING');
+      const { data: pending } = await dbClient.from('pending_approvals').select('*').eq('status', 'PENDING').order('submitted_at', { ascending: false });
 
       allItems = items || [];
       allInventory = inv || [];
@@ -158,13 +171,72 @@
       } else {
         await dbClient.from('inventory').insert([{ item_id: itemId, side: side, quantity: 1, notes: remark }]);
       }
-      await dbClient.from('pending_approvals').update({ status: 'APPROVED' }).eq('id', pId);
+      await dbClient.from('pending_approvals').update({ status: 'APPROVED', processed_at: new Date().toISOString() }).eq('id', pId);
       fetchData();
+      fetchHistoryRecord();
     }
 
     async function rejectItem(pId) {
-      await dbClient.from('pending_approvals').update({ status: 'REJECTED' }).eq('id', pId);
+      await dbClient.from('pending_approvals').update({ status: 'REJECTED', processed_at: new Date().toISOString() }).eq('id', pId);
       fetchData();
+      fetchHistoryRecord();
+    }
+
+    async function fetchHistoryRecord() {
+      const container = document.getElementById("historyTableContainer");
+      
+      // Calculate 3 months ago timestamp
+      const threeMonthsAgo = new Date();
+      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+
+      const { data: history, error } = await dbClient
+        .from('pending_approvals')
+        .select('*')
+        .neq('status', 'PENDING')
+        .gte('submitted_at', threeMonthsAgo.toISOString())
+        .order('submitted_at', { ascending: false });
+
+      if (error || !history || history.length === 0) {
+        container.innerHTML = `<div class="text-slate-400 italic py-2">No approval history recorded in the last 3 months.</div>`;
+        return;
+      }
+
+      container.innerHTML = `
+        <table class="w-full text-left border-collapse border border-slate-200 min-w-[600px]">
+          <thead>
+            <tr class="bg-slate-100 text-slate-700">
+              <th class="p-2 border">Submitted Date</th>
+              <th class="p-2 border">Staff Name</th>
+              <th class="p-2 border">Lamp Item</th>
+              <th class="p-2 border text-center">Side</th>
+              <th class="p-2 border text-center">Status</th>
+              <th class="p-2 border">Remark</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${history.map(rec => {
+              const d = rec.submitted_at ? new Date(rec.submitted_at) : new Date();
+              const dateFormatted = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+              const isApproved = rec.status === 'APPROVED';
+
+              return `
+                <tr class="hover:bg-slate-50 border-b">
+                  <td class="p-2 border font-medium text-slate-700">${dateFormatted}</td>
+                  <td class="p-2 border font-bold text-slate-800">${rec.staff_name || 'Staff'}</td>
+                  <td class="p-2 border font-medium">${rec.item_title}</td>
+                  <td class="p-2 border text-center font-bold ${rec.side === 'L' ? 'text-blue-600' : 'text-purple-600'}">${rec.side}</td>
+                  <td class="p-2 border text-center">
+                    <span class="px-2 py-0.5 rounded font-bold text-[10px] ${isApproved ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}">
+                      ${rec.status}
+                    </span>
+                  </td>
+                  <td class="p-2 border text-slate-500">${rec.remark || '-'}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
     }
 
     async function addItem() {
@@ -217,7 +289,7 @@
                   <td class="p-2 border font-bold text-slate-800">${item.brand}</td>
                   <td class="p-2 border font-medium">${item.series} (${item.model_code}) <div class="text-[10px] text-slate-400">${item.category}</div></td>
                   
-                  <!-- Left Stock Control (+ / -) -->
+                  <!-- Left Stock Control -->
                   <td class="p-2 border text-center">
                     <div class="flex items-center justify-center gap-2">
                       <button onclick="editQty(${leftId}, ${item.id}, 'L', ${leftQty - 1})" class="w-7 h-7 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded font-bold text-sm shadow-sm active:scale-95">-</button>
@@ -226,7 +298,7 @@
                     </div>
                   </td>
 
-                  <!-- Right Stock Control (+ / -) -->
+                  <!-- Right Stock Control -->
                   <td class="p-2 border text-center">
                     <div class="flex items-center justify-center gap-2">
                       <button onclick="editQty(${rightId}, ${item.id}, 'R', ${rightQty - 1})" class="w-7 h-7 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded font-bold text-sm shadow-sm active:scale-95">-</button>
@@ -270,6 +342,7 @@
     window.editQty = editQty;
     window.deleteItem = deleteItem;
     window.renderTable = renderTable;
+    window.fetchHistoryRecord = fetchHistoryRecord;
 
     window.addEventListener('DOMContentLoaded', initApp);
   </script>
