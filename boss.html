@@ -205,7 +205,7 @@
       }
 
       container.innerHTML = `
-        <table class="w-full text-left border-collapse border border-slate-200 min-w-[600px]">
+        <table class="w-full text-left border-collapse border border-slate-200 min-w-[650px]">
           <thead>
             <tr class="bg-slate-100 text-slate-700">
               <th class="p-2 border">Submitted Date</th>
@@ -214,6 +214,7 @@
               <th class="p-2 border text-center">Side</th>
               <th class="p-2 border text-center">Status</th>
               <th class="p-2 border">Remark</th>
+              <th class="p-2 border text-center">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -234,12 +235,26 @@
                     </span>
                   </td>
                   <td class="p-2 border text-slate-500">${rec.remark || '-'}</td>
+                  <td class="p-2 border text-center">
+                    <button onclick="deleteHistoryRecord(${rec.id})" class="text-red-500 hover:text-red-700 font-bold text-xs p-1" title="Delete History Record">🗑️ Delete</button>
+                  </td>
                 </tr>
               `;
             }).join('')}
           </tbody>
         </table>
       `;
+    }
+
+    async function deleteHistoryRecord(id) {
+      if (confirm("Delete this history record?")) {
+        const { error } = await dbClient.from('pending_approvals').delete().eq('id', id);
+        if (error) {
+          alert("Error deleting record: " + error.message);
+        } else {
+          fetchHistoryRecord();
+        }
+      }
     }
 
     async function addItem() {
@@ -346,6 +361,7 @@
     window.deleteItem = deleteItem;
     window.renderTable = renderTable;
     window.fetchHistoryRecord = fetchHistoryRecord;
+    window.deleteHistoryRecord = deleteHistoryRecord;
 
     window.addEventListener('DOMContentLoaded', initApp);
   </script>
