@@ -126,7 +126,8 @@
 
     function renderInventory() {
       const container = document.getElementById("inventoryContainer");
-      const searchTerm = document.getElementById("searchInput").value.toLowerCase().trim();
+      const searchInput = document.getElementById("searchInput");
+      const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : "";
 
       const filteredItems = allItems.filter(item => {
         const matchesBrand = selectedBrand === "ALL" || item.brand === selectedBrand;
@@ -245,7 +246,17 @@
       }
     }
 
-    window.addEventListener('DOMContentLoaded', initApp);
+    // Attach handlers explicitly to window for global inline access
+    window.renderInventory = renderInventory;
+    window.setBrandFilter = setBrandFilter;
+    window.adjustStock = adjustStock;
+    window.updateNote = updateNote;
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initApp);
+    } else {
+      initApp();
+    }
   </script>
 </body>
 </html>
