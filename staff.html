@@ -3,23 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VA AUTO - Staff Polishing Submission</title>
+  <title>VA AUTO - Staff Submission</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen pb-16">
 
-  <!-- Header -->
   <header class="bg-slate-900 text-white p-4 sticky top-0 z-50 shadow-md">
     <div class="max-w-xl mx-auto flex items-center justify-between">
       <div>
         <h1 class="font-bold text-lg text-amber-400">VA AUTO RESTORATION</h1>
         <p class="text-xs text-slate-400">Staff Polishing Log</p>
       </div>
-      <div class="flex items-center gap-2">
-        <a href="./index.html" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded border border-slate-700">Main Portal</a>
-        <div id="connectionStatus" class="text-xs px-2 py-1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">Connecting...</div>
-      </div>
+      <a href="./index.html" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded border border-slate-700">Main Portal</a>
     </div>
   </header>
 
@@ -32,7 +28,7 @@
         <input 
           type="text" 
           id="searchInput" 
-          placeholder="Search model or code (e.g. W205, F30, Camry)..." 
+          placeholder="Search model code (e.g. W205, F30, Camry)..." 
           class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-amber-500"
           oninput="renderInventory()"
         />
@@ -44,9 +40,9 @@
       </div>
     </div>
 
-    <!-- Lamp List -->
+    <!-- Catalog List -->
     <div id="inventoryContainer" class="space-y-4">
-      <div id="loadingText" class="text-center py-12 text-slate-400 text-sm">Loading lamp catalog...</div>
+      <div id="loadingText" class="text-center py-12 text-slate-400 text-sm">Loading catalog...</div>
     </div>
 
   </main>
@@ -58,14 +54,8 @@
     let dbClient, allItems = [], selectedBrand = "ALL";
 
     async function initApp() {
-      try {
-        dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        await fetchData();
-        document.getElementById("connectionStatus").innerText = "Live Database";
-        document.getElementById("connectionStatus").className = "text-xs px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
-      } catch (err) {
-        console.error(err);
-      }
+      dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      await fetchData();
     }
 
     async function fetchData() {
@@ -111,9 +101,7 @@
             <p class="text-xs text-slate-500">${item.spec_description || 'Standard Spec'}</p>
           </div>
 
-          <!-- Left Side Submission -->
           ${renderSideRow(item, 'L')}
-          <!-- Right Side Submission -->
           ${renderSideRow(item, 'R')}
         </div>
       `).join('');
@@ -129,6 +117,7 @@
             </div>
 
             <button 
+              type="button"
               onclick="submitPolished(${item.id}, '${item.brand} ${item.series} (${item.model_code})', '${side}')" 
               class="text-xs bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold px-3 py-1.5 rounded-lg shadow-sm active:scale-95 transition"
             >
@@ -137,29 +126,39 @@
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-            <input 
-              type="text" 
-              id="staffName_${item.id}_${side}" 
-              placeholder="Staff Name (Required)..." 
-              class="text-xs p-2 border border-slate-300 rounded-md bg-white outline-none focus:border-amber-500 font-semibold text-slate-800" 
-            />
-            <input 
-              type="text" 
-              id="remark_${item.id}_${side}" 
-              placeholder="Remark (e.g., polished lens, fixed bracket)..." 
-              class="text-xs p-2 border border-slate-300 rounded-md bg-white outline-none focus:border-amber-500 text-slate-600" 
-            />
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Staff Name *</label>
+              <input 
+                type="text" 
+                id="staffName_${item.id}_${side}" 
+                placeholder="Enter your name..." 
+                class="w-full text-xs p-2 border border-slate-300 rounded-md bg-white outline-none focus:border-amber-500 font-semibold text-slate-800" 
+              />
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Polishing Remark</label>
+              <input 
+                type="text" 
+                id="remark_${item.id}_${side}" 
+                placeholder="e.g., polished lens, bracket fixed..." 
+                class="w-full text-xs p-2 border border-slate-300 rounded-md bg-white outline-none focus:border-amber-500 text-slate-600" 
+              />
+            </div>
           </div>
         </div>
       `;
     }
 
     async function submitPolished(itemId, title, side) {
-      const staffName = document.getElementById(`staffName_${itemId}_${side}`).value.trim();
-      const remarkVal = document.getElementById(`remark_${itemId}_${side}`).value.trim();
+      const staffInput = document.getElementById(`staffName_${itemId}_${side}`);
+      const remarkInput = document.getElementById(`remark_${itemId}_${side}`);
+
+      const staffName = staffInput ? staffInput.value.trim() : "";
+      const remarkVal = remarkInput ? remarkInput.value.trim() : "";
 
       if (!staffName) {
         alert("Please enter your Staff Name before submitting.");
+        if (staffInput) staffInput.focus();
         return;
       }
 
@@ -178,7 +177,7 @@
         alert("Submission Error: " + error.message);
       } else {
         alert(`Submitted for Boss Approval!\nStaff: ${staffName}\nItem: ${title} [${side}-side]`);
-        document.getElementById(`remark_${itemId}_${side}`).value = "";
+        if (remarkInput) remarkInput.value = "";
       }
     }
 

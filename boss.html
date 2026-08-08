@@ -3,18 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VA AUTO - Boss Management Dashboard</title>
+  <title>VA AUTO - Boss Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen pb-16">
 
-  <!-- Header -->
   <header class="bg-slate-900 text-white p-4 sticky top-0 z-50 shadow-md">
     <div class="max-w-4xl mx-auto flex items-center justify-between">
       <div>
         <h1 class="font-bold text-lg text-amber-400">VA AUTO RESTORATION</h1>
-        <p class="text-xs text-slate-400">Boss Management & Inventory Control</p>
+        <p class="text-xs text-slate-400">Boss Management Dashboard</p>
       </div>
       <a href="./index.html" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700">← Portal</a>
     </div>
@@ -22,7 +21,7 @@
 
   <main class="max-w-4xl mx-auto p-4 space-y-6">
 
-    <!-- PIN Authentication Screen -->
+    <!-- PIN Screen -->
     <div id="pinScreen" class="bg-white p-6 rounded-xl border max-w-md mx-auto text-center space-y-4 mt-8 shadow-sm">
       <div class="text-2xl">🔒</div>
       <h2 class="font-bold text-slate-900">Boss Dashboard Access</h2>
@@ -31,7 +30,7 @@
         <input type="password" id="pinInput" maxlength="4" placeholder="1234" class="w-28 p-2 border text-center font-bold rounded text-lg outline-none focus:ring-2 focus:ring-amber-500" />
         <button onclick="checkPin()" class="bg-amber-500 font-bold px-4 py-2 rounded text-slate-900 text-sm hover:bg-amber-400">Unlock</button>
       </div>
-      <p id="pinErr" class="text-xs text-red-500 hidden">Incorrect PIN. Default PIN is 1234.</p>
+      <p id="pinErr" class="text-xs text-red-500 hidden">Incorrect PIN. Try 1234.</p>
     </div>
 
     <!-- Main Boss Dashboard -->
@@ -75,16 +74,16 @@
         <button onclick="addItem()" class="w-full bg-slate-900 text-white font-bold py-2 rounded text-xs hover:bg-slate-800 transition">Save to Catalog</button>
       </div>
 
-      <!-- Master Inventory Table -->
+      <!-- Master Editable Inventory Table -->
       <div class="bg-white p-5 rounded-xl border border-slate-200 space-y-3 shadow-sm">
         <div class="flex justify-between items-center border-b pb-2">
-          <h2 class="font-bold text-slate-900 text-sm">📋 Editable Master Inventory Table</h2>
+          <h2 class="font-bold text-slate-900 text-sm">📋 Master Live Inventory Table</h2>
           <input type="text" id="bossFilter" placeholder="Filter inventory..." oninput="renderTable()" class="text-xs p-1.5 border rounded outline-none" />
         </div>
         <div id="tableContainer" class="overflow-x-auto text-xs"></div>
       </div>
 
-      <!-- Sales History Log with Date -->
+      <!-- Sales History Log -->
       <div class="bg-white p-5 rounded-xl border border-slate-200 space-y-3 shadow-sm">
         <div class="flex justify-between items-center border-b pb-2">
           <h2 class="font-bold text-slate-900 text-sm">🛍️ Recent Sales Log History</h2>
@@ -151,12 +150,12 @@
             <div>
               <div class="font-bold text-slate-900">${item.item_title} <span class="px-1.5 py-0.5 rounded text-[10px] ${item.side === 'L' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}">${item.side}-side</span></div>
               <div class="text-slate-600 text-[11px] mt-0.5">
-                👤 <strong>Staff:</strong> ${item.staff_name || 'Staff Member'} • 📅 <strong>Date:</strong> ${dateStr}
+                👤 <strong>Staff:</strong> ${item.staff_name || 'Unspecified'} • 📅 <strong>Date:</strong> ${dateStr}
               </div>
               <div class="text-slate-500 text-[11px]">Remark: "${item.remark}"</div>
             </div>
             <div class="flex gap-2">
-              <button onclick="approveItem(${item.id}, ${item.item_id}, '${item.side}', '${item.remark} (by ${item.staff_name} on ${dateStr})')" class="bg-emerald-600 text-white font-bold px-3 py-1.5 rounded hover:bg-emerald-500 transition">Approve (+1)</button>
+              <button onclick="approveItem(${item.id}, ${item.item_id}, '${item.side}', '${item.remark} (by ${item.staff_name || 'Staff'})')" class="bg-emerald-600 text-white font-bold px-3 py-1.5 rounded hover:bg-emerald-500 transition">Approve (+1)</button>
               <button onclick="rejectItem(${item.id})" class="bg-red-100 text-red-600 font-bold px-2.5 py-1.5 rounded hover:bg-red-200 transition">Reject</button>
             </div>
           </div>
@@ -200,7 +199,7 @@
       const container = document.getElementById("tableContainer");
 
       const filtered = allItems.filter(i => 
-        i.brand.toLowerCase().includes(filter) || i.model_code.toLowerCase().includes(filter)
+        i.brand.toLowerCase().includes(filter) || i.model_code.toLowerCase().includes(filter) || i.series.toLowerCase().includes(filter)
       );
 
       container.innerHTML = `
@@ -263,7 +262,7 @@
 
     async function markSold(stockId, itemId, side, currentQty) {
       if (currentQty <= 0) {
-        alert("Current stock is 0.");
+        alert("Cannot mark as sold—current stock is 0.");
         return;
       }
       const now = new Date();
