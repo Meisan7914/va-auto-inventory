@@ -9,57 +9,63 @@
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen pb-16">
 
+  <!-- Navigation Header -->
   <header class="bg-slate-900 text-white p-4 sticky top-0 z-50 shadow-md">
-    <div class="max-w-3xl mx-auto flex items-center justify-between">
+    <div class="max-w-4xl mx-auto flex items-center justify-between">
       <div>
         <h1 class="font-bold text-lg text-amber-400">VA AUTO RESTORATION</h1>
-        <p class="text-xs text-slate-400">Boss Management & Approvals</p>
+        <p class="text-xs text-slate-400">Boss Management & Full Inventory Control</p>
       </div>
-      <div id="connectionStatus" class="text-xs px-2 py-1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
-        Connecting...
+      <div class="flex items-center gap-3">
+        <a href="./index.html" class="text-xs bg-slate-800 border border-slate-700 hover:bg-slate-700 px-3 py-1.5 rounded-lg text-slate-300">
+          ← Main Portal
+        </a>
+        <div id="connectionStatus" class="text-xs px-2 py-1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+          Connecting...
+        </div>
       </div>
     </div>
   </header>
 
-  <main class="max-w-3xl mx-auto p-4 space-y-6">
+  <main class="max-w-4xl mx-auto p-4 space-y-6">
 
-    <!-- PIN Screen -->
+    <!-- PIN Authentication Screen -->
     <div id="bossAuthBox" class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 text-center space-y-4 max-w-md mx-auto mt-8">
       <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto text-xl">🔒</div>
       <div>
-        <h2 class="font-bold text-slate-900 text-base">Boss Access Only</h2>
-        <p class="text-xs text-slate-500 mt-1">Enter PIN to approve staff submissions and manage inventory.</p>
+        <h2 class="font-bold text-slate-900 text-base">Boss / Manager Access Only</h2>
+        <p class="text-xs text-slate-500 mt-1">Enter your manager PIN to unlock full inventory editing capabilities.</p>
       </div>
       <div class="flex justify-center gap-2">
         <input type="password" id="bossPinInput" maxlength="4" placeholder="1234" class="w-32 border border-slate-300 rounded-lg p-2 text-center text-lg tracking-widest outline-none focus:ring-2 focus:ring-amber-500" />
         <button onclick="verifyBossPin()" class="bg-amber-500 text-slate-900 font-bold px-4 py-2 rounded-lg hover:bg-amber-400 transition text-sm">Unlock Dashboard</button>
       </div>
-      <p id="pinError" class="text-xs text-red-500 hidden">Incorrect PIN. Try 1234.</p>
+      <p id="pinError" class="text-xs text-red-500 hidden">Incorrect PIN. Default PIN is 1234.</p>
     </div>
 
-    <!-- Main Dashboard Content -->
+    <!-- Boss Admin Dashboard Content -->
     <div id="bossDashboardContent" class="hidden space-y-6">
 
-      <!-- Pending Approval Queue -->
+      <!-- Pending Staff Polishing Approvals -->
       <div class="bg-white p-5 rounded-xl shadow-sm border border-amber-200 space-y-3 bg-amber-50/20">
         <h2 class="font-bold text-slate-900 text-sm border-b pb-2 flex justify-between items-center">
-          <span>⏳ Pending Staff Polishing Approvals</span>
+          <span>⏳ Pending Staff Polishing Submissions</span>
           <span id="pendingCountBadge" class="text-xs bg-amber-500 text-slate-900 font-bold px-2.5 py-0.5 rounded-full">0 Pending</span>
         </h2>
         <div id="pendingContainer" class="space-y-2 text-xs">
-          <div class="text-slate-400 py-2">Loading pending approvals...</div>
+          <div class="text-slate-400 py-2">Loading submissions...</div>
         </div>
       </div>
 
-      <!-- Add New Brand / Model Catalog Form -->
+      <!-- Add New Brand / Model to Catalog -->
       <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-4">
         <h2 class="font-bold text-slate-900 text-sm border-b pb-2 flex items-center gap-2">
-          <span>➕</span> Add New Brand / Model to Catalog
+          <span>➕</span> Add New Brand / Lamp Item to Catalog
         </h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
           <div>
-            <label class="block font-semibold text-slate-600 mb-1">Brand</label>
-            <input type="text" id="newBrand" placeholder="e.g. Mercedes, BMW, Porsche" class="w-full p-2 border rounded-lg bg-slate-50" />
+            <label class="block font-semibold text-slate-600 mb-1">Car Brand</label>
+            <input type="text" id="newBrand" placeholder="e.g. Mercedes, BMW, Porsche, Mazda" class="w-full p-2 border rounded-lg bg-slate-50" />
           </div>
           <div>
             <label class="block font-semibold text-slate-600 mb-1">Model Code</label>
@@ -84,16 +90,22 @@
           </div>
         </div>
         <button onclick="createNewItem()" class="w-full bg-slate-900 text-white font-bold py-2.5 rounded-lg text-xs hover:bg-slate-800 transition">
-          Save Item to Inventory Catalog
+          Save New Lamp Item to Catalog
         </button>
       </div>
 
-      <!-- Master Inventory Overview Table -->
+      <!-- Live Editable Master Inventory Table -->
       <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-3">
-        <h2 class="font-bold text-slate-900 text-sm border-b pb-2 flex justify-between items-center">
-          <span>📋 Master Inventory Overview</span>
-          <button onclick="fetchData()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded">🔄 Refresh</button>
-        </h2>
+        <div class="flex flex-wrap justify-between items-center border-b pb-2 gap-2">
+          <h2 class="font-bold text-slate-900 text-sm">
+            📋 Editable Master Inventory Table
+          </h2>
+          <div class="flex items-center gap-2 text-xs">
+            <input type="text" id="bossSearch" placeholder="Filter items..." oninput="renderBossTable()" class="border p-1.5 rounded-md bg-slate-50 outline-none" />
+            <button onclick="fetchData()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-md font-semibold">🔄 Refresh</button>
+          </div>
+        </div>
+
         <div id="bossTableContainer" class="overflow-x-auto text-xs">
           <!-- Rendered dynamically -->
         </div>
@@ -221,6 +233,13 @@
 
     function renderBossTable() {
       const container = document.getElementById("bossTableContainer");
+      const filterTerm = document.getElementById("bossSearch") ? document.getElementById("bossSearch").value.toLowerCase().trim() : "";
+
+      const filteredItems = allItems.filter(item => 
+        item.brand.toLowerCase().includes(filterTerm) ||
+        item.model_code.toLowerCase().includes(filterTerm) ||
+        item.series.toLowerCase().includes(filterTerm)
+      );
 
       container.innerHTML = `
         <table class="w-full text-left border-collapse border border-slate-200">
@@ -228,30 +247,64 @@
             <tr class="bg-slate-100 text-slate-700">
               <th class="p-2 border">Brand</th>
               <th class="p-2 border">Model / Series</th>
-              <th class="p-2 border">Category</th>
-              <th class="p-2 border text-center">Left (L)</th>
-              <th class="p-2 border text-center">Right (R)</th>
-              <th class="p-2 border">Latest Remarks</th>
+              <th class="p-2 border text-center">Left Stock (L)</th>
+              <th class="p-2 border text-center">Right Stock (R)</th>
+              <th class="p-2 border">Remarks</th>
+              <th class="p-2 border text-center">Action</th>
             </tr>
           </thead>
           <tbody>
-            ${allItems.map(item => {
+            ${filteredItems.map(item => {
               const itemStocks = allInventory.filter(inv => inv.item_id === item.id);
               const left = itemStocks.find(s => s.side === 'L');
               const right = itemStocks.find(s => s.side === 'R');
 
               const leftQty = left ? left.quantity : 0;
               const rightQty = right ? right.quantity : 0;
-              const remarks = [left?.notes, right?.notes].filter(Boolean).join(' | ') || '-';
+              const leftNotes = left ? left.notes || '' : '';
+              const rightNotes = right ? right.notes || '' : '';
 
               return `
                 <tr class="hover:bg-slate-50 border-b">
                   <td class="p-2 border font-bold text-slate-800">${item.brand}</td>
-                  <td class="p-2 border font-medium">${item.series} (${item.model_code})</td>
-                  <td class="p-2 border text-slate-600">${item.category}</td>
-                  <td class="p-2 border text-center font-bold ${leftQty > 0 ? 'text-emerald-600 bg-emerald-50' : 'text-slate-400'}">${leftQty}</td>
-                  <td class="p-2 border text-center font-bold ${rightQty > 0 ? 'text-emerald-600 bg-emerald-50' : 'text-slate-400'}">${rightQty}</td>
-                  <td class="p-2 border text-slate-600 text-xs">${remarks}</td>
+                  <td class="p-2 border">
+                    <div class="font-bold text-slate-900">${item.series} (${item.model_code})</div>
+                    <div class="text-[10px] text-slate-400">${item.category} • ${item.spec_description || 'Std'}</div>
+                  </td>
+
+                  <!-- Left Stock Control -->
+                  <td class="p-2 border text-center">
+                    <div class="flex items-center justify-center gap-1">
+                      <button onclick="directStockEdit(${left?.id || null}, ${item.id}, 'L', ${leftQty - 1})" class="w-5 h-5 bg-slate-200 rounded font-bold">-</button>
+                      <span class="font-bold min-w-[20px] ${leftQty > 0 ? 'text-emerald-600' : 'text-slate-400'}">${leftQty}</span>
+                      <button onclick="directStockEdit(${left?.id || null}, ${item.id}, 'L', ${leftQty + 1})" class="w-5 h-5 bg-amber-500 text-slate-900 rounded font-bold">+</button>
+                    </div>
+                  </td>
+
+                  <!-- Right Stock Control -->
+                  <td class="p-2 border text-center">
+                    <div class="flex items-center justify-center gap-1">
+                      <button onclick="directStockEdit(${right?.id || null}, ${item.id}, 'R', ${rightQty - 1})" class="w-5 h-5 bg-slate-200 rounded font-bold">-</button>
+                      <span class="font-bold min-w-[20px] ${rightQty > 0 ? 'text-emerald-600' : 'text-slate-400'}">${rightQty}</span>
+                      <button onclick="directStockEdit(${right?.id || null}, ${item.id}, 'R', ${rightQty + 1})" class="w-5 h-5 bg-amber-500 text-slate-900 rounded font-bold">+</button>
+                    </div>
+                  </td>
+
+                  <!-- Remarks Editing -->
+                  <td class="p-2 border text-xs space-y-1">
+                    <input 
+                      type="text" 
+                      placeholder="L note..." 
+                      value="${leftNotes}" 
+                      onchange="updateStockNote(${left?.id || null}, ${item.id}, 'L', this.value)"
+                      class="w-full border-b border-dashed outline-none bg-transparent text-[11px]"
+                    />
+                  </td>
+
+                  <!-- Delete Item Option -->
+                  <td class="p-2 border text-center">
+                    <button onclick="deleteCatalogItem(${item.id})" class="text-red-500 hover:text-red-700 text-xs font-bold px-2 py-1">🗑️</button>
+                  </td>
                 </tr>
               `;
             }).join('')}
@@ -260,11 +313,40 @@
       `;
     }
 
+    async function directStockEdit(stockId, itemId, side, newQty) {
+      const validQty = Math.max(0, newQty);
+      if (stockId) {
+        await dbClient.from('inventory').update({ quantity: validQty }).eq('id', stockId);
+      } else {
+        await dbClient.from('inventory').insert([{ item_id: itemId, side: side, quantity: validQty }]);
+      }
+      fetchData();
+    }
+
+    async function updateStockNote(stockId, itemId, side, noteText) {
+      if (stockId) {
+        await dbClient.from('inventory').update({ notes: noteText }).eq('id', stockId);
+      } else {
+        await dbClient.from('inventory').insert([{ item_id: itemId, side: side, quantity: 0, notes: noteText }]);
+      }
+      fetchData();
+    }
+
+    async function deleteCatalogItem(itemId) {
+      if (confirm("Are you sure you want to delete this lamp model from the catalog?")) {
+        await dbClient.from('items').delete().eq('id', itemId);
+        fetchData();
+      }
+    }
+
     window.verifyBossPin = verifyBossPin;
     window.createNewItem = createNewItem;
     window.approveSubmission = approveSubmission;
     window.rejectSubmission = rejectSubmission;
-    window.fetchData = fetchData;
+    window.directStockEdit = directStockEdit;
+    window.updateStockNote = updateStockNote;
+    window.deleteCatalogItem = deleteCatalogItem;
+    window.renderBossTable = renderBossTable;
 
     window.addEventListener('DOMContentLoaded', initApp);
   </script>
