@@ -121,7 +121,7 @@
 
     function renderSideRow(item, side) {
       return `
-        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 space-y-2">
+        <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-2">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
               <span class="w-6 h-6 flex items-center justify-center font-bold text-xs rounded ${side === 'L' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}">${side}</span>
@@ -136,24 +136,40 @@
             </button>
           </div>
 
-          <input 
-            type="text" 
-            id="remark_${item.id}_${side}" 
-            placeholder="Add remark (e.g., polished lens, bracket fixed, minor scratch)..." 
-            class="w-full text-xs p-2 border border-slate-300 rounded-md bg-white outline-none focus:border-amber-500" 
-          />
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+            <input 
+              type="text" 
+              id="staffName_${item.id}_${side}" 
+              placeholder="Staff Name (Required)..." 
+              class="text-xs p-2 border border-slate-300 rounded-md bg-white outline-none focus:border-amber-500 font-semibold text-slate-800" 
+            />
+            <input 
+              type="text" 
+              id="remark_${item.id}_${side}" 
+              placeholder="Remark (e.g., polished lens, fixed bracket)..." 
+              class="text-xs p-2 border border-slate-300 rounded-md bg-white outline-none focus:border-amber-500 text-slate-600" 
+            />
+          </div>
         </div>
       `;
     }
 
     async function submitPolished(itemId, title, side) {
+      const staffName = document.getElementById(`staffName_${itemId}_${side}`).value.trim();
       const remarkVal = document.getElementById(`remark_${itemId}_${side}`).value.trim();
+
+      if (!staffName) {
+        alert("Please enter your Staff Name before submitting.");
+        return;
+      }
+
       const now = new Date();
 
       const { error } = await dbClient.from('pending_approvals').insert([{
         item_id: itemId,
         item_title: title,
         side: side,
+        staff_name: staffName,
         remark: remarkVal || "Polished lamp submitted",
         submitted_at: now.toISOString()
       }]);
@@ -161,7 +177,7 @@
       if (error) {
         alert("Submission Error: " + error.message);
       } else {
-        alert(`Submitted for Boss Approval!\n${title} [${side}-side]`);
+        alert(`Submitted for Boss Approval!\nStaff: ${staffName}\nItem: ${title} [${side}-side]`);
         document.getElementById(`remark_${itemId}_${side}`).value = "";
       }
     }
